@@ -1,8 +1,10 @@
-#this code install all necessary packages from the necessary_packages.txt
+#install all necessary packages from the necessary_packages.txt
 
-pckgs <- suppressWarnings(read.delim(paste(getwd(), "/necessary_packages.txt", sep = ""), header = FALSE, stringsAsFactors = FALSE)[,1])
+necessary_packages <- suppressWarnings(read.delim(paste(getwd(), "/necessary_packages.txt", sep = ""), header = FALSE, stringsAsFactors = FALSE)[,1])
 
-install.packages(pckgs)
+packages_i_dont_have <- subset(necessary_packages, !(necessary_packages %in% installed.packages()[,1]))
+
+install.packages(packages_i_dont_have)
 
 
                     

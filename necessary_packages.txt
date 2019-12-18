@@ -2,4 +2,6 @@ ggplot2
 quantmod
 scales
 ggthemes
-dplyr
+tidyverse
+glue
+rvest
