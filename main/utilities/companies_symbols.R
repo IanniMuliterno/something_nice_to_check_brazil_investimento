@@ -1,10 +1,5 @@
 #push all the companies symbols
 
-library(tidyverse)
-library(rvest)
-library(glue)
-
-
 url <- "https://br.advfn.com/bolsa-de-valores/bovespa/"
   
 companies_symbols = data.frame(empresa = character(), simbolo = character())
@@ -20,3 +15,5 @@ for(letter in c(LETTERS)){
   companies_symbols <- rbind(companies_symbols, page_table)
 
 }
+
+companies_symbols$simbolo <- paste(companies_symbols$simbolo, ".SA", sep = "")
