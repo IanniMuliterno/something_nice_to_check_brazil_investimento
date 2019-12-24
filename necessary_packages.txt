@@ -6,3 +6,4 @@ tidyverse
 glue
 rvest
 tidyquant
+DT

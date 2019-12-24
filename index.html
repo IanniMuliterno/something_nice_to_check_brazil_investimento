@@ -428,7 +428,8 @@ source(&quot;main/utilities/load_libraries.R&quot;)</code></pre>
 <h4>Detalhe importante aqui, estou puxando todos os tickers da <a href="https://br.advfn.com/">advfn</a>, nem todos esses tickers são válidos, alguns devem ser bem antigos. Após isso, como a biblioteca <a href="https://business-science.github.io/tidyquant/">tidyquant</a> puxa as informações do <a href="https://br.financas.yahoo.com/">Yahoo Finance</a>, acrescentei um <strong>.SA</strong> no final dos tickers. Isso porque vi que procurando os tickers lá, todos tinham esse final <strong>.SA</strong>.</h4>
 <p> </p>
 <pre class="r"><code>source(&quot;main/utilities/companies_symbols.R&quot;)
-head(companies_symbols)</code></pre>
+
+companies_symbols %&gt;% as.data.frame() %&gt;% head()</code></pre>
 <pre><code>##                           empresa   simbolo
 ## 1                  ADVANCED-DH ON  ADHM3.SA
 ## 2                  AES TIETE E PN  TIET4.SA
@@ -445,16 +446,15 @@ head(companies_symbols)</code></pre>
 <h4>Essa extração puxa os dados de 2019 para todas as empresas acima, as que não forem encontradas, claro, ficarão de fora. São duas extrações “demoradas” e depois é feito um join entre elas. Então o código deve demorar pelo menos uns 5 minutos para executar.</h4>
 <p> </p>
 <pre class="r"><code>source(&quot;main/utilities/historical_data.R&quot;)
-head(historical_data)</code></pre>
-<pre><code>## # A tibble: 6 x 10
-##   symbol date        open  high   low close volume adjusted value dividends
-##   &lt;chr&gt;  &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;
-## 1 ADHM3… 2019-01-02  1.49  1.5   1.49  1.5    1800     1.5     NA        NA
-## 2 ADHM3… 2019-01-03  1.48  1.48  1.42  1.42   7600     1.42    NA        NA
-## 3 ADHM3… 2019-01-04  1.47  1.49  1.42  1.42   1600     1.42    NA        NA
-## 4 ADHM3… 2019-01-07  1.41  1.45  1.4   1.4    4500     1.4     NA        NA
-## 5 ADHM3… 2019-01-08  1.4   1.4   1.39  1.39   9000     1.39    NA        NA
-## 6 ADHM3… 2019-01-09  1.46  1.46  1.39  1.39   5100     1.39    NA        NA</code></pre>
+
+historical_data %&gt;% as.data.frame() %&gt;% head()</code></pre>
+<pre><code>##     symbol       date open high  low close volume adjusted value dividends
+## 1 ADHM3.SA 2019-01-02 1.49 1.50 1.49  1.50   1800     1.50    NA        NA
+## 2 ADHM3.SA 2019-01-03 1.48 1.48 1.42  1.42   7600     1.42    NA        NA
+## 3 ADHM3.SA 2019-01-04 1.47 1.49 1.42  1.42   1600     1.42    NA        NA
+## 4 ADHM3.SA 2019-01-07 1.41 1.45 1.40  1.40   4500     1.40    NA        NA
+## 5 ADHM3.SA 2019-01-08 1.40 1.40 1.39  1.39   9000     1.39    NA        NA
+## 6 ADHM3.SA 2019-01-09 1.46 1.46 1.39  1.39   5100     1.39    NA        NA</code></pre>
 </div>
 </div>
 <div id="consolidando-informacoes" class="section level3">
@@ -462,61 +462,70 @@ head(historical_data)</code></pre>
 <p><br />
 </p>
 <div id="com-os-dados-em-maos-agora-vamos-abrir-aqui-um-pouco-de-codigo.-a-ideia-e-agrupar-o-valor-medio-da-acao-e-do-dividendo-no-mes.-como-nao-ha-empresas-que-pagam-dividendos-diarios-a-media-do-mes-sera-o-proprio-valor-do-dividendo.-apos-isso-calculamos-o-dividend_yield-e-criamos-mais-um-campo-dividend_was_payed-para-contar-depois-quantas-vezes-a-empresa-pagou-dividendos-no-ano." class="section level4">
-<h4>Com os dados em mãos, agora vamos abrir aqui um pouco de código. A ideia é agrupar o valor médio da ação e do dividendo no mês. Como não há empresas que pagam dividendos diários, a média do mês será o próprio valor do dividendo. Após isso, calculamos o <mark>dividend_yield</mark> e criamos mais um campo <mark>dividend_was_payed</mark> para contar, depois, quantas vezes a empresa pagou dividendos no ano.</h4>
+<h4>Com os dados em mãos, agora vamos abrir aqui um pouco de código. A ideia é agrupar o valor médio da ação e do dividendo no mês. Como não há empresas que pagam dividendos diários, a média do mês será o próprio valor do dividendo. Após isso, calculamos o dividend_yield e criamos mais um campo dividend_was_payed para contar, depois, quantas vezes a empresa pagou dividendos no ano.</h4>
 <p> </p>
 <pre class="r"><code>stock_prices &lt;-
   historical_data %&gt;%
   select(symbol, date, adjusted, dividends) %&gt;%
+  filter(date &gt;= &quot;2019-01-01&quot;) %&gt;%
   mutate(agg_date = format(as.Date(date), &quot;%Y-%m&quot;)) %&gt;%
   group_by(symbol, agg_date) %&gt;%
   summarise(month_mean_price = mean(adjusted, na.rm = TRUE), dividends = mean(dividends, na.rm = TRUE), dividend_yield = dividends/month_mean_price) %&gt;%
-  mutate(dividend_was_payed = ifelse(!(is.na(dividend_yield)), 1, 0))
+  mutate(dividend_was_payed = ifelse(!(is.na(dividend_yield)), 1, 0)) %&gt;%
+  as.data.frame()
 
 head(stock_prices)</code></pre>
-<pre><code>## # A tibble: 6 x 6
-## # Groups:   symbol [1]
-##   symbol agg_date month_mean_price dividends dividend_yield
-##   &lt;chr&gt;  &lt;chr&gt;               &lt;dbl&gt;     &lt;dbl&gt;          &lt;dbl&gt;
-## 1 AALR3… 2019-01              13.8  NaN           NaN      
-## 2 AALR3… 2019-02              15.6  NaN           NaN      
-## 3 AALR3… 2019-03              15.4  NaN           NaN      
-## 4 AALR3… 2019-04              14.6    0.0568        0.00388
-## 5 AALR3… 2019-05              14.6  NaN           NaN      
-## 6 AALR3… 2019-06              13.7  NaN           NaN      
-## # … with 1 more variable: dividend_was_payed &lt;dbl&gt;</code></pre>
+<pre><code>##     symbol agg_date month_mean_price dividends dividend_yield
+## 1 AALR3.SA  2019-01         13.84827       NaN            NaN
+## 2 AALR3.SA  2019-02         15.61808       NaN            NaN
+## 3 AALR3.SA  2019-03         15.36875       NaN            NaN
+## 4 AALR3.SA  2019-04         14.61783  0.056775    0.003883955
+## 5 AALR3.SA  2019-05         14.55591       NaN            NaN
+## 6 AALR3.SA  2019-06         13.73263       NaN            NaN
+##   dividend_was_payed
+## 1                  0
+## 2                  0
+## 3                  0
+## 4                  1
+## 5                  0
+## 6                  0</code></pre>
+</div>
+<div id="agora-vamos-separar-as-empresas-em-grupos-com-base-na-periodicidade-de-pagamento-de-seus-dividendos" class="section level4">
+<h4>Agora vamos separar as empresas em grupos, com base na periodicidade de pagamento de seus dividendos</h4>
 <pre class="r"><code>company_groups &lt;- 
   stock_prices %&gt;% 
   group_by(symbol) %&gt;%
   summarise(periodicity = 12/sum(dividend_was_payed)) %&gt;%
   filter(periodicity %in% c(12, 6, 3, 2, 1)) %&gt;%
-  arrange(desc(periodicity))
+  arrange(desc(periodicity)) %&gt;%
+  as.data.frame()
 
-
-head(company_groups, n = 10)</code></pre>
-<pre><code>## # A tibble: 10 x 2
-##    symbol   periodicity
-##    &lt;chr&gt;          &lt;dbl&gt;
-##  1 AALR3.SA          12
-##  2 ABEV3.SA          12
-##  3 AFLT3.SA          12
-##  4 AGRO3.SA          12
-##  5 ALUP3.SA          12
-##  6 ALUP4.SA          12
-##  7 ANIM3.SA          12
-##  8 BAUH3.SA          12
-##  9 BAUH4.SA          12
-## 10 BAZA3.SA          12</code></pre>
+head(company_groups)</code></pre>
+<pre><code>##     symbol periodicity
+## 1 AALR3.SA          12
+## 2 ABEV3.SA          12
+## 3 AFLT3.SA          12
+## 4 AGRO3.SA          12
+## 5 ALUP3.SA          12
+## 6 ALUP4.SA          12</code></pre>
+</div>
+<div id="por-fim-para-nao-ficar-repetindo-codigo-vamos-criar-uma-funcao-que-nos-mostre-o-ranking-das-empresas-com-base-na-periodicidade-passada-como-argumento" class="section level4">
+<h4>Por fim, para não ficar repetindo código, vamos criar uma função que nos mostre o ranking das empresas com base na periodicidade passada como argumento</h4>
 <pre class="r"><code>avg_yield_by_periodicity &lt;- function(p) {
   
    stock_prices %&gt;%
-   filter(symbol %in% c(company_groups %&gt;% filter(periodicity == 12/p) %&gt;% select(symbol) %&gt;% distinct())$symbol ) %&gt;%
+   filter(symbol %in% c(company_groups %&gt;% filter(periodicity == p) %&gt;% select(symbol) %&gt;% distinct())$symbol ) %&gt;%
    group_by(symbol) %&gt;%
    summarise(period_avg_yield = mean(dividend_yield, na.rm = TRUE)) %&gt;%
    filter(!is.na(period_avg_yield)) %&gt;%
-   arrange(desc(period_avg_yield)) %&gt;% 
-   head(10)
+   arrange(desc(period_avg_yield)) %&gt;%
+   head(10) %&gt;%
+   as.data.frame()
 
 }</code></pre>
+</div>
+<div id="resultados" class="section level4">
+<h4><em>Resultados</em></h4>
 </div>
 </div>
 <div id="ranking-por-periodicidade-de-pagamento" class="section level1 tabset tabset-fade tabset-pills">
@@ -524,65 +533,85 @@ head(company_groups, n = 10)</code></pre>
 <div id="mensalmente" class="section level2">
 <h2>Mensalmente</h2>
 <pre class="r"><code>avg_yield_by_periodicity(1)</code></pre>
-<pre><code>## # A tibble: 10 x 2
-##    symbol   period_avg_yield
-##    &lt;chr&gt;               &lt;dbl&gt;
-##  1 SOND6.SA           0.304 
-##  2 SOND3.SA           0.198 
-##  3 ENAT3.SA           0.153 
-##  4 WHRL4.SA           0.106 
-##  5 WHRL3.SA           0.101 
-##  6 CEBR5.SA           0.101 
-##  7 BAUH3.SA           0.0954
-##  8 BMEB4.SA           0.0938
-##  9 BMIN4.SA           0.0743
-## 10 CESP5.SA           0.0739</code></pre>
+<pre><code>##     symbol period_avg_yield
+## 1 BEES3.SA     0.0040475020
+## 2 BEES4.SA     0.0039947634
+## 3 ITUB3.SA     0.0018221953
+## 4 BBDC4.SA     0.0016030000
+## 5 ITUB4.SA     0.0015717994
+## 6 BBDC3.SA     0.0007151543</code></pre>
 </div>
 <div id="bimestralmente" class="section level2">
 <h2>Bimestralmente</h2>
 <pre class="r"><code>avg_yield_by_periodicity(2)</code></pre>
-<pre><code>## # A tibble: 10 x 2
-##    symbol    period_avg_yield
-##    &lt;chr&gt;                &lt;dbl&gt;
-##  1 GSHP3.SA            1.05  
-##  2 MMAQ4.SA            0.888 
-##  3 LUXM3.SA            0.135 
-##  4 CGAS5.SA            0.0719
-##  5 ENMA3B.SA           0.0630
-##  6 BRDT3.SA            0.0613
-##  7 CGAS3.SA            0.0609
-##  8 PEAB3.SA            0.0548
-##  9 BRKM5.SA            0.0516
-## 10 BRKM3.SA            0.0514</code></pre>
+<pre><code>##     symbol period_avg_yield
+## 1 ITSA4.SA      0.009771817
+## 2 ITSA3.SA      0.009001327
+## 3 HGTX3.SA      0.005716426</code></pre>
 </div>
 <div id="trimestralmente" class="section level2">
 <h2>Trimestralmente</h2>
 <pre class="r"><code>avg_yield_by_periodicity(3)</code></pre>
-<pre><code>## # A tibble: 0 x 2
-## # … with 2 variables: symbol &lt;chr&gt;, period_avg_yield &lt;dbl&gt;</code></pre>
+<pre><code>##      symbol period_avg_yield
+## 1  CEEB5.SA       0.04354625
+## 2  CEEB3.SA       0.03799401
+## 3  REDE3.SA       0.01612470
+## 4  VIVT3.SA       0.01566003
+## 5  TAEE4.SA       0.01560824
+## 6  VIVT4.SA       0.01533208
+## 7  TAEE3.SA       0.01492551
+## 8  BPAR3.SA       0.01398294
+## 9  GUAR3.SA       0.01232681
+## 10 SANB4.SA       0.01231401</code></pre>
 </div>
 <div id="semestralmente" class="section level2">
 <h2>Semestralmente</h2>
 <pre class="r"><code>avg_yield_by_periodicity(6)</code></pre>
-<pre><code>## # A tibble: 3 x 2
-##   symbol   period_avg_yield
-##   &lt;chr&gt;               &lt;dbl&gt;
-## 1 ITSA4.SA          0.00977
-## 2 ITSA3.SA          0.00900
-## 3 HGTX3.SA          0.00572</code></pre>
+<pre><code>##       symbol period_avg_yield
+## 1   GSHP3.SA       1.05228703
+## 2   MMAQ4.SA       0.88813648
+## 3   LUXM3.SA       0.13524401
+## 4   CGAS5.SA       0.07193482
+## 5  ENMA3B.SA       0.06299003
+## 6   BRDT3.SA       0.06131076
+## 7   CGAS3.SA       0.06089868
+## 8   PEAB3.SA       0.05477974
+## 9   BRKM5.SA       0.05160443
+## 10  BRKM3.SA       0.05143344</code></pre>
 </div>
 <div id="anualmente" class="section level2">
 <h2>Anualmente</h2>
 <pre class="r"><code>avg_yield_by_periodicity(12)</code></pre>
-<pre><code>## # A tibble: 6 x 2
-##   symbol   period_avg_yield
-##   &lt;chr&gt;               &lt;dbl&gt;
-## 1 BEES3.SA         0.00405 
-## 2 BEES4.SA         0.00399 
-## 3 ITUB3.SA         0.00182 
-## 4 BBDC4.SA         0.00160 
-## 5 ITUB4.SA         0.00157 
-## 6 BBDC3.SA         0.000715</code></pre>
+<pre><code>##      symbol period_avg_yield
+## 1  SOND6.SA       0.30364751
+## 2  SOND3.SA       0.19751989
+## 3  ENAT3.SA       0.15315012
+## 4  WHRL4.SA       0.10614393
+## 5  WHRL3.SA       0.10101973
+## 6  CEBR5.SA       0.10080314
+## 7  BAUH3.SA       0.09537601
+## 8  BMEB4.SA       0.09375600
+## 9  BMIN4.SA       0.07433848
+## 10 CESP5.SA       0.07387045</code></pre>
+</div>
+</div>
+<div id="section" class="section level1">
+<h1></h1>
+<div id="conclusao" class="section level3">
+<h3><strong>Conclusão</strong></h3>
+<p> </p>
+<div id="pelos-resultados-que-conseguimos-extrair-aqui-acho-que-eu-vou-ficar-de-olho-nos-ativos-que-fornecem-dividendos-semestrais.-sao-os-que-mais-pagam-bem-e-esse-resultado-ocorre-pelo-menos-duas-vezes-por-ano-ja-que-e-semestral.-com-certeza-vou-ficar-de-olho-em-gshp3-general-shopping-que-pagou-em-media-1-real-de-dividendo-para-cada-1-real-investido-em-2019.-aqui-no-site-da-xp-investimentos-da-pra-ver-que-realmente-essa-analise-faz-sentido.-porem-para-mmaq4-minasmaquina-nao-consegui-achar-nenhuma-informacao-relavante-por-ai-que-comprove-os-dados-apresentados." class="section level4">
+<h4>Pelos resultados que conseguimos extrair aqui, acho que eu vou ficar de olho nos ativos que fornecem dividendos semestrais. São os que mais pagam bem e esse resultado ocorre pelo menos duas vezes por ano, já que é semestral. Com certeza vou ficar de olho em GSHP3 (General Shopping), que pagou em média 1 real de dividendo para cada 1 real investido em 2019. <a href="https://www.infomoney.com.br/cotacoes/general-shopping-gshp3/">Aqui no site da XP Investimentos</a> da pra ver que realmente essa análise faz sentido. Porém, para MMAQ4 (Minasmaquina) não consegui achar nenhuma informação relavante por ai que comprove os dados apresentados.</h4>
+<p> </p>
+</div>
+<div id="eu-nao-esperava-muito-dessa-analise-principalmente-por-ver-que-os-provedores-gratuitos-de-informacao-nao-fornecem-dados-tao-atualizados.-para-algumas-empresas-da-certo-para-outras-nem-tanto.-mas-gostei-dos-resultados-eles-fornecem-pelo-menos-um-norte-de-quais-empresas-podemos-investigar-mais-a-fundo." class="section level4">
+<h4>Eu não esperava muito dessa análise, principalmente por ver que os provedores gratuitos de informação não fornecem dados tão atualizados. Para algumas empresas dá certo, para outras nem tanto. Mas, gostei dos resultados; eles fornecem, pelo menos, um norte de quais empresas podemos investigar mais a fundo.</h4>
+<p> <br />
+</p>
+</div>
+<div id="obrigado-por-ler-ate-aqui" class="section level4">
+<h4>Obrigado por ler até aqui :)</h4>
+</div>
 </div>
 </div>
 
