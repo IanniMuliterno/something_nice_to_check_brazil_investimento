@@ -2,7 +2,10 @@
 title: "Empresas Brasileiras que mantiveram uma boa média de Dividend Yield em 2019"
 author: "Edson Henrique Delavia"
 date: "23/12/2019"
-output: html_document
+output: 
+  html_document:
+    keep_md: true
+
 ---
 
 \  
@@ -47,14 +50,13 @@ output: html_document
 \  
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = dirname(getwd()))
 ```
 
 ### **Carregando pacotes necessários**
 ```{r message=FALSE, warning=FALSE}
-#source("main/utilities/necessary_packages.R")
-#source("main/utilities/load_libraries.R")
+source("main/utilities/necessary_packages.R")
+source("main/utilities/load_libraries.R")
 ```
 \  
 \  
@@ -65,9 +67,9 @@ knitr::opts_knit$set(root.dir = dirname(getwd()))
 #### Detalhe importante aqui, estou puxando todos os tickers da [advfn](https://br.advfn.com/), nem todos esses tickers são válidos, alguns devem ser bem antigos. Após isso, como a biblioteca [tidyquant](https://business-science.github.io/tidyquant/) puxa as informações do [Yahoo Finance](https://br.financas.yahoo.com/), acrescentei um **.SA** no final dos tickers. Isso porque vi que procurando os tickers lá, todos tinham esse final **.SA**.
 \  
 
-```{r message=FALSE, warning=FALSE}
-#source("main/utilities/companies_symbols.R")
-#head(companies_symbols)
+```{r}
+source("main/utilities/companies_symbols.R")
+head(companies_symbols)
 ```
 
 ### **Extraindo dados históricos das ações e dos dividendos**
@@ -77,8 +79,8 @@ knitr::opts_knit$set(root.dir = dirname(getwd()))
 \  
 
 ```{r message=FALSE, warning=FALSE}
-#source("main/utilities/historical_data.R")
-#head(historical_data)
+source("main/utilities/historical_data.R")
+head(historical_data)
 ```
 
 ### **Consolidando informações**
@@ -89,15 +91,15 @@ knitr::opts_knit$set(root.dir = dirname(getwd()))
 
 ```{r}
 
-#stock_prices <-
-#  historical_data %>%
-#  select(symbol, date, adjusted, dividends) %>%
-#  mutate(agg_date = format(as.Date(date), "%Y-%m")) %>%
-#  group_by(symbol, agg_date) %>%
-#  summarise(month_mean_price = mean(adjusted, na.rm = TRUE), dividends = mean(dividends, na.rm = TRUE), dividend_yield = dividends/month_mean_price) %>%
-#  mutate(dividend_was_payed = ifelse(!(is.na(dividend_yield)), 1, 0))
-#
-#head(stock_prices)
+stock_prices <-
+  historical_data %>%
+  select(symbol, date, adjusted, dividends) %>%
+  mutate(agg_date = format(as.Date(date), "%Y-%m")) %>%
+  group_by(symbol, agg_date) %>%
+  summarise(month_mean_price = mean(adjusted, na.rm = TRUE), dividends = mean(dividends, na.rm = TRUE), dividend_yield = dividends/month_mean_price) %>%
+  mutate(dividend_was_payed = ifelse(!(is.na(dividend_yield)), 1, 0))
+
+head(stock_prices)
 ```
 
 
@@ -148,20 +150,20 @@ avg_yield_by_periodicity(2)
 ## Trimestralmente
 
 ```{r}
-#avg_yield_by_periodicity(3)
+avg_yield_by_periodicity(3)
 ```
 
 
 ## Semestralmente
 
 ```{r}
-#avg_yield_by_periodicity(6)
+avg_yield_by_periodicity(6)
 ```
 
 
 ## Anualmente
 
 ```{r}
-#avg_yield_by_periodicity(12)
+avg_yield_by_periodicity(12)
 ```
 
