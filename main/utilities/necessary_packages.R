@@ -4,7 +4,9 @@ necessary_packages <- suppressWarnings(read.delim(paste(getwd(), "/necessary_pac
 
 packages_i_dont_have <- subset(necessary_packages, !(necessary_packages %in% installed.packages()[,1]))
 
-install.packages(packages_i_dont_have)
+if(length(packages_i_dont_have) > 0) {
+  install.packages(packages_i_dont_have)
+}
 
 
                     

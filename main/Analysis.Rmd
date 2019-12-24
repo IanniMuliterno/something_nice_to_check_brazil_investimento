@@ -1,0 +1,70 @@
+---
+title: "Test"
+author: "Edson Henrique Delavia"
+date: "23/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = dirname(getwd()))
+```
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+source("main/utilities/necessary_packages.R")
+source("main/utilities/load_libraries.R")
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+source("main/utilities/companies_symbols.R")
+head(companies_symbols)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+source("main/utilities/historical_data.R")
+head(historical_data)
+```
+
+```{r}
+historical_data %>% select(date) %>% distinct() %>% arrange()
+```
+
+
+
+```{r}
+
+monthly_variations <-
+  historical_data %>%
+  select(symbol, date, adjusted) %>%
+  mutate(agg_date = format(as.Date(date), "%Y-%m")) %>%
+  group_by(symbol, agg_date) %>%
+  summarise(month_mean_price = mean(adjusted, na.rm = TRUE)) %>%
+  mutate(monthly_variation = (month_mean_price - lag(month_mean_price))/lag(month_mean_price))
+
+head(monthly_variations, n = 10)
+  
+```
+
+```{r}
+top_companies <-
+  monthly_variations %>%
+  group_by(symbol) %>%
+  summarise(year_mean_variation = mean(monthly_variation, na.rm = TRUE)) %>%
+  arrange(desc(year_mean_variation)) %>%
+  head(1)
+
+
+top_companies
+  
+```
+
+```{r}
+monthly_variations %>% filter(symbol %in% top_companies$symbol) %>% ggplot() + geom_line(aes(x = agg_date, y = month_mean_price, group = symbol, color = symbol))
+```
+
